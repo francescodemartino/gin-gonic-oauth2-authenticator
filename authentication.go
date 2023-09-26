@@ -127,10 +127,8 @@ func keyRedisNotExist(c *gin.Context, authorization string) {
 			if roles == nil {
 				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 			} else {
-				fmt.Println("authorization", authorization)
-				token, _, _ := new(jwt.Parser).ParseUnverified(authorization, jwt.MapClaims{})
+				token, _, _ := new(jwt.Parser).ParseUnverified(authorization[7:], jwt.MapClaims{})
 				claims, _ := token.Claims.(jwt.MapClaims)
-				fmt.Println("claims", claims)
 				expTime := time.Duration(int64(claims["exp"].(float64))) * time.Nanosecond
 				expirationJwt := time.Duration(expTime.Nanoseconds()-time.Now().UnixNano()) / 2 * time.Nanosecond
 				fmt.Println("expTime", expTime)
