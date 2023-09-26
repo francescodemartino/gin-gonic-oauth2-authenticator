@@ -11,15 +11,15 @@ import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"github.com/golang-jwt/jwt"
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 )
 
-const ExpirationTimeRedis = 3600000000000
-
 /*
-	Json of api/user
+Json of api/user
 */
 type DataReceive struct {
 	User struct {
@@ -52,7 +52,7 @@ type DataReceive struct {
 }
 
 /*
-	Gin-Gonic middleware to import for oauth2 authentication
+Gin-Gonic middleware to import for oauth2 authentication
 */
 func Authentication(c *gin.Context) {
 	var authorization string
@@ -71,8 +71,8 @@ func Authentication(c *gin.Context) {
 }
 
 /*
-	Gin-Gonic middleware to import for check roles of an user
-	it MUST be used after Authentication
+Gin-Gonic middleware to import for check roles of an user
+it MUST be used after Authentication
 */
 func Roles(roles []string) func(c *gin.Context) {
 	return func(c *gin.Context) {
@@ -94,7 +94,7 @@ func Roles(roles []string) func(c *gin.Context) {
 }
 
 /*
-	Simple function to check if a value is in an array
+Simple function to check if a value is in an array
 */
 func isInArray(value string, arrayValues []string) bool {
 	for _, arrayValue := range arrayValues {
@@ -106,7 +106,7 @@ func isInArray(value string, arrayValues []string) bool {
 }
 
 /*
-	If the Redis key doesn't exist, it creates and use it
+If the Redis key doesn't exist, it creates and use it
 */
 func keyRedisNotExist(c *gin.Context, authorization string) {
 	request, _ := http.NewRequest("GET", endPointOauthAuth+"/api/user", nil)
@@ -126,7 +126,11 @@ func keyRedisNotExist(c *gin.Context, authorization string) {
 			if roles == nil {
 				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 			} else {
-				redisClient.Set(ctx, createKey(authorization), string(body), ExpirationTimeRedis)
+				token, _, _ := new(jwt.Parser).ParseUnverified(authorization, jwt.MapClaims{})
+				claims, _ := token.Claims.(jwt.MapClaims)
+				expTime := time.Duration(int64(claims["exp"].(float64))/2) * time.Nanosecond
+
+				redisClient.Set(ctx, createKey(authorization), string(body), expTime)
 				c.Set("user_id", &send)
 				c.Set("user_roles", roles)
 				c.Next()
@@ -136,7 +140,7 @@ func keyRedisNotExist(c *gin.Context, authorization string) {
 }
 
 /*
-	It uses the data in the Redis key
+It uses the data in the Redis key
 */
 func keyRedisExists(c *gin.Context, userInfo *redis.StringCmd) {
 	var send DataReceive
@@ -152,7 +156,7 @@ func keyRedisExists(c *gin.Context, userInfo *redis.StringCmd) {
 }
 
 /*
-	Check if the application ID of the user is equal to the application ID of the project
+Check if the application ID of the user is equal to the application ID of the project
 */
 func checkApplicationIDAndGetRules(data *DataReceive) []string {
 	for _, registration := range data.User.Registrations {
@@ -164,7 +168,7 @@ func checkApplicationIDAndGetRules(data *DataReceive) []string {
 }
 
 /*
-	Create the key for Redis
+Create the key for Redis
 */
 func createKey(authentication string) string {
 	index := strings.LastIndex(authentication, ".") + 1
