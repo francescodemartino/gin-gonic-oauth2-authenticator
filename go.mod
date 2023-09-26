@@ -1,4 +1,4 @@
-module git.circleton.com/francesco.demartino/gin-gonic-oauth2-authenticator
+module github.com/francesco.demartino/gin-gonic-oauth2-authenticator
 
 go 1.15
 
