@@ -1,4 +1,4 @@
-module github.com/francesco.demartino/gin-gonic-oauth2-authenticator
+module github.com/francescodemartino/gin-gonic-oauth2-authenticator
 
 go 1.15
 
