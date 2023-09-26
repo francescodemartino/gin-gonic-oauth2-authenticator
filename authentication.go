@@ -130,7 +130,7 @@ func keyRedisNotExist(c *gin.Context, authorization string) {
 				token, _, _ := new(jwt.Parser).ParseUnverified(authorization[7:], jwt.MapClaims{})
 				claims, _ := token.Claims.(jwt.MapClaims)
 				expTime := int64(claims["exp"].(float64))
-				expirationJwt := time.Duration(expTime-time.Now().Unix()) / 2 * time.Nanosecond
+				expirationJwt := time.Duration(expTime-time.Now().Unix()) / 2 * time.Second
 				fmt.Println("expTime", expTime)
 				fmt.Println("expiration", expirationJwt)
 
