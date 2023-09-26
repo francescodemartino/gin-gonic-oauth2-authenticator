@@ -9,6 +9,7 @@ package oauth2_authenticator
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt"
@@ -129,8 +130,11 @@ func keyRedisNotExist(c *gin.Context, authorization string) {
 				token, _, _ := new(jwt.Parser).ParseUnverified(authorization, jwt.MapClaims{})
 				claims, _ := token.Claims.(jwt.MapClaims)
 				expTime := time.Duration(int64(claims["exp"].(float64))/2) * time.Nanosecond
+				expirationJwt := time.Duration(expTime.Nanoseconds()-time.Now().UnixNano()) * time.Nanosecond
+				fmt.Println("expTime", expTime)
+				fmt.Println("expiration", expirationJwt)
 
-				redisClient.Set(ctx, createKey(authorization), string(body), expTime)
+				redisClient.Set(ctx, createKey(authorization), string(body), expirationJwt)
 				c.Set("user_id", &send)
 				c.Set("user_roles", roles)
 				c.Next()
